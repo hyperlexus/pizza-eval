@@ -1,4 +1,14 @@
-recursion_counter = 0
+
+# error handling
+class PizzaError(Exception):
+    def __init__(self, code: int, expression: str):
+        self.code = code
+        self.expression = expression  # the expression that it failed on that will be returned to the user
+        self.message = error_dict.get(code, "unhandled error")
+        super().__init__(self.message)
+
+    def __str__(self):
+        return f"Error code {self.code}: {self.message}\nprocessing this expression: `{self.expression}"
 
 error_dict = {
     # read eval errors:
@@ -48,5 +58,3 @@ error_dict = {
     1207: "replace statements cannot be chained together inside of each other as that doesn't make sense",
     1208: "statement to replace with starts with a [, but isn't a random block, which is not allowed. use single quotes (\') for this if you want to print a [ character."
 }
-
-

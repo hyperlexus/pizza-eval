@@ -2,7 +2,8 @@ import random
 import re
 from datetime import datetime
 
-from Utils.PizzaEval.PizzaEvalUtils import is_valid_replace_statement, PizzaError
+from .utils import is_valid_replace_statement
+from .errors import PizzaError
 
 
 def pizza_eval_write(author_name: str, original_message: str, write_result: str) -> str:
@@ -15,7 +16,7 @@ def pizza_eval_write(author_name: str, original_message: str, write_result: str)
             return original_message
         elif block.startswith("random\\"):
             if block.count("random") > 1:
-                raise PizzaError({'c': 1104, 'e': block})
+                raise PizzaError(1104, block)
             options = block[7:].split('\\')
             weighted_options = {}
             for option in options:
@@ -24,10 +25,10 @@ def pizza_eval_write(author_name: str, original_message: str, write_result: str)
                     try:
                         weight = int(weight)
                     except ValueError:
-                        raise PizzaError({'c': 1103, 'e': block})
+                        raise PizzaError(1103, block)
                     weighted_options[event] = weight
                 except ValueError:
-                    raise PizzaError({'c': 1102, 'e': block})
+                    raise PizzaError(1102, block)
             return random.choices(list(weighted_options.keys()), list(weighted_options.values()), k=1)[0]
         else:
             return f"[{block}]"  # dont change irrelevant blocks
@@ -35,7 +36,7 @@ def pizza_eval_write(author_name: str, original_message: str, write_result: str)
     def separate_replace_blocks(whole_statement: str) -> list:
         inquotes = False
         paranthese_level = 0
-        cocks = []
+        segments = []
         current_statement = ""
         for i in whole_statement:
             if i == "'":
@@ -44,7 +45,7 @@ def pizza_eval_write(author_name: str, original_message: str, write_result: str)
                 if i == "[":
                     if paranthese_level == 0:
                         if current_statement:
-                            cocks.append(current_statement)
+                            segments.append(current_statement)
                             current_statement = ""
                     paranthese_level += 1
                     current_statement += "["
@@ -54,7 +55,7 @@ def pizza_eval_write(author_name: str, original_message: str, write_result: str)
 
                     if current_statement.startswith("[replace"):
                         if paranthese_level == 0:
-                            cocks.append(current_statement + i)
+                            segments.append(current_statement + i)
                             current_statement = ""
                         else:
                             current_statement += "]"
@@ -67,8 +68,8 @@ def pizza_eval_write(author_name: str, original_message: str, write_result: str)
                 current_statement += i
 
         if current_statement:
-            cocks.append(current_statement)
-        return cocks
+            segments.append(current_statement)
+        return segments
 
     def process_replace_block(string: str) -> str:
         result = ""
@@ -98,7 +99,7 @@ def pizza_eval_write(author_name: str, original_message: str, write_result: str)
 
     def parse_one_replace(write_result: str):
         if not is_valid_replace_statement(write_result):
-            raise PizzaError({'c': 1200, 'e': write_result})
+            raise PizzaError(1200, write_result)
 
         content = write_result[1:-1]
         segments = []
@@ -144,7 +145,7 @@ def pizza_eval_write(author_name: str, original_message: str, write_result: str)
                 continue
             stringa, stringb = parse_one_replace(i)
             if stringb.startswith("[replace"):
-                raise PizzaError({'c': 1207, 'e': stringb})
+                raise PizzaError(1207, stringb)
             processed_stringb = process_replace_block(stringb)
             if stringa.lower() in original_message.lower():
                 result += re.sub(stringa, processed_stringb, original_message, flags=re.IGNORECASE)
@@ -169,7 +170,7 @@ def pizza_eval_write(author_name: str, original_message: str, write_result: str)
         if in_quotes:
             end_quote = write_result.find("'", start)
             if end_quote == -1:
-                raise PizzaError({'c': 1001, 'e': write_result})
+                raise PizzaError(1001, write_result)
             result += write_result[start_idx:end_quote + 1]
             start_idx = end_quote + 1
             in_quotes = False
@@ -177,7 +178,7 @@ def pizza_eval_write(author_name: str, original_message: str, write_result: str)
 
         end = write_result.find(']', start)
         if end == -1:
-            raise PizzaError({'c': 1002, 'e': write_result})
+            raise PizzaError(1002, write_result)
 
         result += write_result[start_idx:start]
         block_content = write_result[start + 1:end]
@@ -185,8 +186,3 @@ def pizza_eval_write(author_name: str, original_message: str, write_result: str)
         start_idx = end + 1
 
     return result
-
-if __name__ == "__main__":
-    for i in range(5):
-        spast = pizza_eval_write("hyperlexus", "up", "'[replace\\up\\[random\\down-3\\strange-2\\charm-2\\bottom-1\\top-1]]")
-        print(spast)

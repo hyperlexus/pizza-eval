@@ -1,13 +1,4 @@
-from Utils.PizzaEval.PizzaEvalErrorDict import error_dict
-
-
-# error handling
-class PizzaError(Exception):
-    pass
-
-
-def identify_error(error_code: int, expression: str) -> str:
-    return f"Error code {str(error_code)}: {error_dict[error_code]} \nprocessing this expression: `{expression}`"
+from .errors import PizzaError
 
 
 def logical_xor(a, b):
@@ -72,40 +63,41 @@ def bracket_open_close_in_a_row(condition):
             last_paranthese_open = False
 
 
-def is_valid_singel_expression(singel_expression):
-    if all(check not in remove_text_inside_gaensefuesschen(singel_expression) for check in ['is ', 'in ', 'start ', 'end ']):
-        raise PizzaError({'c': 101, 'e': singel_expression})
-    if singel_expression.count("'") % 2:
-        raise PizzaError({'c': 102, 'e': singel_expression})
-    if any(check == singel_expression for check in ['is', 'in', 'start', 'end', 'is ', 'in ', 'start ', 'end ']):
-        raise PizzaError({'c': 103, 'e': singel_expression})
+def is_valid_single_expression(single_expression: str) -> None:
+    if all(check not in remove_text_inside_gaensefuesschen(single_expression) for check in ['is ', 'in ', 'start ', 'end ']):
+        raise PizzaError(101, single_expression)
+    if single_expression.count("'") % 2:
+        raise PizzaError(102, single_expression)
+    if any(check == single_expression for check in ['is', 'in', 'start', 'end', 'is ', 'in ', 'start ', 'end ']):
+        raise PizzaError(103, single_expression)
 
 
-def is_valid_condition(condition):
+def is_valid_condition(condition: str) -> None:
     if not condition:
-        raise PizzaError({'c': 0, 'e': condition})
+        raise PizzaError(0, condition)
     if condition.count("'") % 2:
-        raise PizzaError({'c': 1, 'e': condition})
+        raise PizzaError(1, condition)
     if condition[0] == "'":
-        raise PizzaError({'c': 2, 'e': condition})
+        raise PizzaError(2, condition)
     if all(check not in condition for check in ['is ', 'in ', 'start ', 'end ']):
-        raise PizzaError({'c': 3, 'e': condition})
-    if is_parenthese_lvl_fine(condition) > 0:
-        raise PizzaError({'c': 301, 'e': condition})
-    if is_parenthese_lvl_fine(condition) < 0:
-        raise PizzaError({'c': 302, 'e': condition})
+        raise PizzaError(3, condition)
+    parentheses_lvl_fine = is_parenthese_lvl_fine(condition)
+    if parentheses_lvl_fine > 0:
+        raise PizzaError(301, condition)
+    if parentheses_lvl_fine < 0:
+        raise PizzaError(302, condition)
     if bracket_open_close_in_a_row(condition):
-        raise PizzaError({'c': 303, 'e': condition})
+        raise PizzaError(303, condition)
     if two_gaensefuesschen_in_a_row(condition):
-        raise PizzaError({'c': 6, 'e': condition})
+        raise PizzaError(6, condition)
     return True
 
 def is_valid_replace_statement(replace_statement: str):
     if not replace_statement.startswith("[replace\\") or not replace_statement.endswith("]"):
-        raise PizzaError({'c': 1201, 'e': replace_statement})
+        raise PizzaError(1201, replace_statement)
 
     if replace_statement.count("'") % 2:
-        raise PizzaError({'c': 1204, 'e': replace_statement})
+        raise PizzaError(1204, replace_statement)
 
     inquotes = False
     openbracketcount, closebracketcount = 0, 0
@@ -127,19 +119,13 @@ def is_valid_replace_statement(replace_statement: str):
             if backslashcount == 2 and not checked_valid_stringb_block:  # valid block but not random
                 stringb_to_check = replace_statement.split("\\")[2]
                 if stringb_to_check.startswith("[") and not stringb_to_check.startswith("[random"):
-                    raise PizzaError({'c': 1208, 'e': replace_statement})
+                    raise PizzaError(1208, replace_statement)
                 checked_valid_stringb_block = True
 
     if backslashcount != 2:
-        raise PizzaError({'c': 1205, 'e': replace_statement})
+        raise PizzaError(1205, replace_statement)
 
     if openbracketcount != closebracketcount or bracket_level != 0:
-        raise PizzaError({'c': 1202, 'e': replace_statement})
+        raise PizzaError(1202, replace_statement)
 
     return True
-
-# try:
-#     print(is_valid_replace_statement("[replace\\siis\\[message], richtiger [author], der um [time] fucking '[' sagt]"))
-# except PizzaError as e:
-#     details = e.args[0]
-#     print(identify_error(details['c'], details['e']))

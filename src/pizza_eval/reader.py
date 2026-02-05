@@ -1,5 +1,5 @@
-from Utils.PizzaEval import PizzaEvalErrorDict
-from Utils.PizzaEval.PizzaEvalUtils import is_valid_condition, PizzaError, logical_xor
+from .errors import PizzaError
+from .utils import is_valid_condition, logical_xor, is_valid_single_expression
 
 
 def condition_to_blocks(condition):
@@ -9,19 +9,20 @@ def condition_to_blocks(condition):
     lastBlockStartIdx = 0
     for searchedOperator in ["|", "^", "&"]:
         for i in range(len(condition)):
-            if condition[i] == "'":
+            current_character = condition[i]
+            if current_character == "'":
                 isInsideQuotes = not isInsideQuotes
             elif not isInsideQuotes:
-                if condition[i] == "(":
+                if current_character == "(":
                     parenthesesLvl += 1
-                elif condition[i] == ")":
+                elif current_character == ")":
                     parenthesesLvl -= 1
-                elif condition[i] == searchedOperator and parenthesesLvl == 0:
+                elif current_character == searchedOperator and parenthesesLvl == 0:
                     blankBefore = i > 0 and condition[i-1] == " "
                     blankAfter = i < len(condition) - 1 and condition[i+1] == " "
                     if i - lastBlockStartIdx > 0:
                         sub_blocks.append(condition[lastBlockStartIdx:i - (1 if blankBefore else 0)])
-                    sub_blocks.append(condition[i])
+                    sub_blocks.append(current_character)
                     sub_blocks.append(condition[i + (2 if blankAfter else 1):])
                     return sub_blocks
     if len(sub_blocks) == 0:
@@ -36,11 +37,12 @@ def remove_quotes(string):
     if string.startswith("'") and string.endswith("'"):
         return string[1:-1]
     elif " " in string:
-        raise PizzaError({'c': 5, 'e': string})
+        raise PizzaError(5, string)
     return string
 
 
-def eval_single_expression(expression, message):
+def eval_single_expression(expression: str, message: str):
+    is_valid_single_expression(expression)
     isNot = False
     if expression.startswith("not "):
         isNot = True
@@ -58,19 +60,21 @@ def eval_single_expression(expression, message):
         cond = expression.partition("end ")[2]
         operationResult = message.endswith(remove_quotes(cond))
     else:
-        raise PizzaError({'c': 104, 'e': expression})
+        raise PizzaError(104, expression)
     return operationResult if not isNot else not operationResult
 
 
-def pizza_eval_read(condition, message):
+def pizza_eval_read(condition: str, message: str):
+    if not condition:
+        raise PizzaError(0, condition)
+    else:
+        condition = condition.lower()
     message = message.lower()
-    condition = condition.lower()
-    if PizzaEvalErrorDict.recursion_counter == 0 and not is_valid_condition(condition):
-        raise PizzaError({'c': -1, 'e': condition})
 
+    is_valid_condition(condition)  # todo
     blocks = condition_to_blocks(condition)
     if not len(blocks) % 2:
-        raise PizzaError({'c': 201, 'e': condition})
+        raise PizzaError(201, condition)
     else:
         if len(blocks) == 1:
             return eval_single_expression(blocks[0], message)
@@ -81,4 +85,4 @@ def pizza_eval_read(condition, message):
         elif "^" in blocks:
             return logical_xor(pizza_eval_read(blocks[0], message), pizza_eval_read(blocks[2], message))
         else:
-            raise PizzaError({'c': 202, 'e': condition})
+            raise PizzaError(202, condition)
