@@ -34,12 +34,24 @@ def condition_to_blocks(condition):
 
 def remove_quotes(string):
     string.strip()
+    if string.count("'") >= 2:
+        last_quote = string.rfind("'")
+        a = string[last_quote + 1:].strip()
+        if last_quote < len(string) - 1 and string[last_quote + 1:] and not string[last_quote + 1] == " ":
+            raise PizzaError(105, string)
     if string.startswith("'") and string.endswith("'"):
         return string[1:-1]
     elif " " in string:
         raise PizzaError(5, string)
     return string
 
+def recursively_check_entire_condition(condition: str) -> None:
+    blocks = condition_to_blocks(condition)
+    if len(blocks) == 1:
+        is_valid_single_expression(blocks[0])
+    else:
+        recursively_check_entire_condition(blocks[0])
+        recursively_check_entire_condition(blocks[2])
 
 def eval_single_expression(expression: str, message: str):
     is_valid_single_expression(expression)
@@ -67,11 +79,13 @@ def eval_single_expression(expression: str, message: str):
 def pizza_eval_read(condition: str, message: str):
     if not condition:
         raise PizzaError(0, condition)
-    else:
-        condition = condition.lower()
+
+    condition = condition.lower()
     message = message.lower()
 
-    is_valid_condition(condition)  # todo
+    is_valid_condition(condition)
+    recursively_check_entire_condition(condition)
+
     blocks = condition_to_blocks(condition)
     if not len(blocks) % 2:
         raise PizzaError(201, condition)

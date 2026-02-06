@@ -4,11 +4,11 @@ class PizzaError(Exception):
     def __init__(self, code: int, expression: str):
         self.code = code
         self.expression = expression  # the expression that it failed on that will be returned to the user
-        self.message = error_dict.get(code, "unhandled error")
+        self.message = error_dict.get(code, f"unhandled error with code {code}")
         super().__init__(self.message)
 
     def __str__(self):
-        return f"Error code {self.code}: {self.message}\nprocessing this expression: `{self.expression}"
+        return f"Error code {self.code}: {self.message}\nprocessing this expression: `{self.expression}`"
 
 error_dict = {
     # read eval errors:
@@ -16,16 +16,18 @@ error_dict = {
     0: "nothing was passed.",
     1: "odd number of single quotes. make sure to close all quotes!",
     2: "condition had `'` as its first character, which is not allowed. did you quote the entire string instead of the expression value?",
-    3: "no valid simple type check contained in complex expression.",
-    4: "amount of opening and closing parentheses do not match. did you close all opened parentheses?",
-    5: "the condition has too many spaces. please set the expression into single quotes `'<expression>'` if your desired expression contains spaces.",
+    3: "no valid simple type check contained in the expression. simple type checks are in, is, start, end",
+    4: "amount of opening and closing parentheses do not match. did you close all opened parentheses?",  # unreachable, is never raised
+    5: "the condition has too many spaces. please set the expression into single quotes `'<expression>'` if it contains spaces.",
     6: "your condition contains two single quotes `''` in a row. please don't do that 🍕👌",
 
     # simple expression handler errors
+    100: "simple expression is empty",
     101: "simple expression doesn't contain necessary simple type check.",
     102: "simple expression has an incorrect amount of single quotes.",
-    103: "simple expression contains a type check, but no value. Did you pass both type and value ('is a')?",
+    103: "simple expression contains only a type check, but no value. Did you pass both type and value ('is a')?",
     104: "simple expression could not evaluate, as type check is not known.",
+    105: "simple expression contains characters after the last closing quote, which is not allowed (as it confuses the compiler)",
 
     # blocks errors
     201: "blocks were not correctly divided. there are an even number of blocks, which shouldn't happen.",

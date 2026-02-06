@@ -19,6 +19,13 @@ def remove_text_inside_gaensefuesschen(expression):  # for contains_a_check
     return out
 
 
+def check_trailing_garbage(expression: str) -> None:  # works for single expressions
+    last_quote_idx = expression.rfind("'")
+    if last_quote_idx != -1:
+        trailing_stuff = expression[last_quote_idx + 1:].strip()
+        if trailing_stuff:
+            raise PizzaError(105, expression)
+
 def is_parenthese_lvl_fine(condition):
     insideGaensefuesschen = False
     parantheseLvl = 0
@@ -64,12 +71,16 @@ def bracket_open_close_in_a_row(condition):
 
 
 def is_valid_single_expression(single_expression: str) -> None:
+    if single_expression == "":
+        raise PizzaError(100, single_expression)
     if all(check not in remove_text_inside_gaensefuesschen(single_expression) for check in ['is ', 'in ', 'start ', 'end ']):
         raise PizzaError(101, single_expression)
     if single_expression.count("'") % 2:
         raise PizzaError(102, single_expression)
     if any(check == single_expression for check in ['is', 'in', 'start', 'end', 'is ', 'in ', 'start ', 'end ']):
         raise PizzaError(103, single_expression)
+    if any(check == single_expression for check in ['is ', 'in ', 'start ', 'end ']):
+        pass
 
 
 def is_valid_condition(condition: str) -> None:
