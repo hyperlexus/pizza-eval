@@ -41,6 +41,7 @@ def test_pizza_read_dynamic(code, condition, message):
     # (1000) shouldn't happen
     (1001, "blud", "bomboclaat '[]blud"),  # unclosed single quote
     (1002, "blud", "b["),
+    (1003, "", "blud")
 ])
 def test_pizza_write_dynamic(code, message, write_result):
     if code == -1:

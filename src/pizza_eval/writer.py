@@ -2,187 +2,155 @@ import random
 import re
 from datetime import datetime
 
-from .utils import is_valid_replace_statement
+from .utils import is_valid_replace_statement, command_contains_logic
 from .errors import PizzaError
 
-
-def pizza_eval_write(author_name: str, original_message: str, write_result: str) -> str:
-    def process_block(block: str) -> str:
-        if block == "author":
-            return str(author_name)
-        elif block == "time":
-            return datetime.now().strftime('%H:%M:%S')
-        elif block == "message":
-            return original_message
-        elif block.startswith("random\\"):
-            if block.count("random") > 1:
-                raise PizzaError(1104, block)
-            options = block[7:].split('\\')
-            weighted_options = {}
-            for option in options:
-                try:
-                    event, weight = option.rsplit('-', 1)
-                    try:
-                        weight = int(weight)
-                    except ValueError:
-                        raise PizzaError(1103, block)
-                    weighted_options[event] = weight
-                except ValueError:
-                    raise PizzaError(1102, block)
-            return random.choices(list(weighted_options.keys()), list(weighted_options.values()), k=1)[0]
-        else:
-            return f"[{block}]"  # dont change irrelevant blocks
-
-    def separate_replace_blocks(whole_statement: str) -> list:
-        inquotes = False
-        paranthese_level = 0
-        segments = []
-        current_statement = ""
-        for i in whole_statement:
-            if i == "'":
-                inquotes = not inquotes
-            elif not inquotes:
-                if i == "[":
-                    if paranthese_level == 0:
-                        if current_statement:
-                            segments.append(current_statement)
-                            current_statement = ""
-                    paranthese_level += 1
-                    current_statement += "["
-
-                elif i == "]":
-                    paranthese_level -= 1
-
-                    if current_statement.startswith("[replace"):
-                        if paranthese_level == 0:
-                            segments.append(current_statement + i)
-                            current_statement = ""
-                        else:
-                            current_statement += "]"
-                    else:
-                        current_statement += "]"
-
-                else:
-                    current_statement += i
-            elif inquotes:
-                current_statement += i
-
-        if current_statement:
-            segments.append(current_statement)
-        return segments
-
-    def process_replace_block(string: str) -> str:
-        result = ""
-        in_quotes = False
-        inside_block_statement = False
-        temp_block_statement = ""
-
-        for i in string:
-            if i == "'":
-                in_quotes = not in_quotes
-                result += i
-            elif not in_quotes:
-                if i not in ("[", "]") and not inside_block_statement:
-                    result += i
-                if i == "[":
-                    inside_block_statement = True
-                if inside_block_statement and i not in ("[", "]"):
-                    temp_block_statement += i
-                if i == "]" and inside_block_statement:
-                    inside_block_statement = False
-                    result += process_block(temp_block_statement)
-                    temp_block_statement = ""
-            elif in_quotes:
-                result += i
-
-        return result
-
-    def parse_one_replace(write_result: str):
-        if not is_valid_replace_statement(write_result):
-            raise PizzaError(1200, write_result)
-
-        content = write_result[1:-1]
-        segments = []
-        current_segment = ""
-        in_quotes = False
-        block_statement_level = 0
-        i = 0
-        while i < len(content):
-            char = content[i]
-            if char == "\\" and not in_quotes and block_statement_level == 0:
-                segments.append(current_segment)
-                current_segment = ""
-            elif char == "'":
-                in_quotes = not in_quotes
-                current_segment += char
-            elif char == "[" and not in_quotes:
-                block_statement_level += 1
-                current_segment += char
-            elif char == "]" and not in_quotes:
-                current_segment += char
-                if block_statement_level == 1:
-                    segments.append(current_segment)
-                    block_statement_level = 0
-                else:
-                    block_statement_level -= 1
-            else:
-                current_segment += char
-            i += 1
-
-        segments.append(current_segment)
-        if "[" in segments[1]:
-            segments[1] = parse_one_replace(segments[1])
-
-        return segments[1], segments[2]
-
-    # [replace\stringa\stringb]
-    if "[replace" in write_result:
-        result = ""
-        replace_blocks = separate_replace_blocks(write_result)
-        for i in replace_blocks:
-            if not i.startswith("[replace"):
-                result += pizza_eval_write(author_name, original_message, i)
-                continue
-            stringa, stringb = parse_one_replace(i)
-            if stringb.startswith("[replace"):
-                raise PizzaError(1207, stringb)
-            processed_stringb = process_replace_block(stringb)
-            if stringa.lower() in original_message.lower():
-                result += re.sub(stringa, processed_stringb, original_message, flags=re.IGNORECASE)
-            else:
-                result += original_message
-        return result
-
-    result = ""
+def command_to_blocks(write_command):
+    if not write_command:
+        raise PizzaError(1003, write_command)
     in_quotes = False
-    start_idx = 0
+    blocks = []
+    current_block = ""
+    parentheses_level = 0
+    for idx, char in enumerate(write_command):
+        if char == "'":
+            in_quotes = not in_quotes
+            current_block += char
+        elif not in_quotes:
+            if char == "[":
+                if parentheses_level == 0:
+                    if current_block:
+                        blocks.append(current_block)
+                    current_block = "["
+                else:
+                    current_block += "["
+                parentheses_level += 1
+            elif char == "]":
+                current_block += "]"
+                if parentheses_level == 1:
+                    if current_block:
+                        blocks.append(current_block)
+                    current_block = ""
+                parentheses_level -= 1
+            else:
+                current_block += char
+        elif in_quotes:
+            current_block += char
+    if current_block:
+        blocks.append(current_block)
+    if in_quotes:
+        raise PizzaError(1001, write_command)
+    if parentheses_level != 0:
+        raise PizzaError(1002, write_command)
+    return blocks
 
-    while start_idx < len(write_result):
-        start = write_result.find('[', start_idx)
-        if start == -1:
-            result += write_result[start_idx:]
-            break
+def separate_random_blocks(random_block: str) -> list[tuple]:
+    print(random_block)
+    random_block += "\\"
+    in_quotes = False
+    current_string = ""
+    looking_for_event = True
+    options = []
+    current_event = ""
+    block_idx = 0
+    parentheses_level = 0
+    for idx, char in enumerate(random_block):
+        if char == "'":
+            in_quotes = not in_quotes
+        elif in_quotes:
+            current_string += char
+        elif not in_quotes:
+            if char == "[":
+                if block_idx != 0:
+                    raise PizzaError(1105, random_block)
+                else:
+                    parentheses_level += 1
+                    current_string += "["
+            elif char == "]":
+                if block_idx == 1:
+                    raise PizzaError(1107, random_block)
+                if parentheses_level > 0:
+                    parentheses_level -= 1
+                    current_string += "]"
+                else:
+                    raise PizzaError(1108, random_block)
+            elif char == "-":
+                if parentheses_level == 0:
+                    if looking_for_event is False:
+                        raise PizzaError(1109, random_block)
+                    looking_for_event = False
+                    current_event = current_string
+                    current_string = ""
+                else:
+                    current_string += char
+            elif char == "\\":
+                if parentheses_level == 0:
+                    if looking_for_event:
+                        raise PizzaError(1111, random_block)
+                    try:
+                        weight = int(current_string)
+                    except ValueError:
+                        raise PizzaError(1103, current_string)
+                    options.append((current_event, weight))
+                    current_event = ""
+                    current_string = ""
+                    looking_for_event = True
+                else:
+                    current_string += char
+            else:
+                current_string += char
 
-        quote_pos = write_result.rfind("'", 0, start)
-        if quote_pos != -1 and write_result[quote_pos:].count("'") % 2 != 0:
-            in_quotes = True
+    if parentheses_level > 0:
+        raise PizzaError(1109, random_block)
+    return options
 
-        if in_quotes:
-            end_quote = write_result.find("'", start)
-            if end_quote == -1:
-                raise PizzaError(1001, write_result)
-            result += write_result[start_idx:end_quote + 1]
-            start_idx = end_quote + 1
-            in_quotes = False
-            continue
+class PizzaWriter:
+    def __init__(self, author_name: str, original_message: str):
+        self.author_name = author_name
+        self.original_message = original_message
 
-        end = write_result.find(']', start)
-        if end == -1:
-            raise PizzaError(1002, write_result)
+    def process_general_block(self, block: str) -> str:
+        if not command_contains_logic(block):
+            return block
+        if block == "[author]":
+            return str(self.author_name)
+        elif block == "[time]":
+            return datetime.now().strftime('%H:%M:%S')  # todo in future version: [time+3h], [time-5d3m]
+        elif block == "[message]":
+            return self.original_message
+        elif block.startswith("[random\\"):
+            return self.process_random_block(block)
+        elif block.startswith("[replace\\"):
+            ...  # todo
+        else:
+            return f"{block}"  # dont change irrelevant blocks
 
-        result += write_result[start_idx:start]
-        block_content = write_result[start + 1:end]
-        result += process_block(block_content)
-        start_idx = end + 1
+    def process_random_block(self, random_block):
+        random_block = random_block[1:-1]
+        random_block = random_block[7:]
+        options = separate_random_blocks(random_block)
+        print(options)
+        weighted_options = {}
+        for option in options:
+            try:
+                event, weight = option[0], option[1]
+                try:
+                    weight = int(weight)
+                except ValueError:
+                    raise PizzaError(1103, random_block)
+            except ValueError:
+                raise PizzaError(1102, random_block)
+            if event.startswith("[") and event.endswith("]"):
+                event = self.process_general_block(random_block)
 
-    return result
+            weighted_options[event] = weight
+        return random.choices(list(weighted_options.keys()), list(weighted_options.values()), k=1)[0]
+
+    def write(self, write_result: str) -> str:
+        command_blocks = command_to_blocks(write_result)  # höhö minecraft
+        if len(command_blocks) == 1:
+            return self.process_general_block(command_blocks[0])
+        else:
+            output = ""
+            for command_block in command_blocks:
+                output += self.process_general_block(command_block)

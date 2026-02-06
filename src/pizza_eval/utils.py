@@ -18,7 +18,6 @@ def remove_text_inside_gaensefuesschen(expression):  # for contains_a_check
             out += char
     return out
 
-
 def check_trailing_garbage(expression: str) -> None:  # works for single expressions
     last_quote_idx = expression.rfind("'")
     if last_quote_idx != -1:
@@ -39,7 +38,6 @@ def is_parenthese_lvl_fine(condition):
         elif char == ")":
             parantheseLvl -= 1
     return parantheseLvl
-
 
 def two_gaensefuesschen_in_a_row(condition):
     last_char_gaensefuesschen = False
@@ -103,6 +101,8 @@ def is_valid_condition(condition: str) -> None:
         raise PizzaError(6, condition)
     return True
 
+
+# writer
 def is_valid_replace_statement(replace_statement: str):
     if not replace_statement.startswith("[replace\\") or not replace_statement.endswith("]"):
         raise PizzaError(1201, replace_statement)
@@ -133,10 +133,17 @@ def is_valid_replace_statement(replace_statement: str):
                     raise PizzaError(1208, replace_statement)
                 checked_valid_stringb_block = True
 
-    if backslashcount != 2:
-        raise PizzaError(1205, replace_statement)
-
     if openbracketcount != closebracketcount or bracket_level != 0:
         raise PizzaError(1202, replace_statement)
-
+    if backslashcount != 2:
+        raise PizzaError(1205, replace_statement)
     return True
+
+def command_contains_logic(command: str) -> bool:
+    in_quotes = False
+    for char in command:
+        if char == "'":
+            in_quotes = not in_quotes
+        if not in_quotes and char in ("[", "]"):
+            return True
+    return False

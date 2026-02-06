@@ -43,12 +43,20 @@ error_dict = {
     1000: "invalid write format, uncaught exception.",
     1001: "unmatched single quote in entire result.",
     1002: "entire statement has mismatched [ and ].",
+    1003: "no write statement was passed. pizza cannot reply with nothing!",
 
     # random errors:
     1101: "invalid [random\\eventa-n\\eventb-m] format.",
     1102: "invalid eventn-p format.",
     1103: "probability has to be an integer indicating weight.",
-    1104: "random statements cannot be chained together as that doesn't make sense mathematically (refer to [this](https://i.imgur.com/LvT3YcW.png)).",
+    1104: "random statements cannot be chained together as that doesn't make sense mathematically (refer to [this](https://i.imgur.com/LvT3YcW.png)).",  # this is now possible!
+    1105: "random event cannot contain a [ that isn't at the start (expression must be entire statement)",
+    1106: "random event has mismatched [ and ].",
+    1107: "random event cannot be an empty statement `[]`.",
+    1108: "random event has too many closing ], causing it to try and close a bracket that was never opened.",
+    1109: "random event has too many opening [, causing it to never close an opened bracket.",
+    1110: "random event contains two event and probability separators, which is incorrect formatting: `...event-probability-probability`. please separate with backlashes!",
+    1111: "random event does not contain a probability assignment.",
 
     # replace errors:
     1200: "replace statement not valid for uncaught reason.",
