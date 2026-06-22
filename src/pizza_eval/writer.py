@@ -44,7 +44,6 @@ def command_to_blocks(write_command):
     return blocks
 
 def separate_random_blocks(random_block: str) -> list[tuple]:
-    print(random_block)
     random_block += "\\"
     in_quotes = False
     current_string = ""
@@ -156,7 +155,6 @@ class PizzaWriter:
         random_block = random_block[1:-1]
         random_block = random_block[7:]
         options = separate_random_blocks(random_block)
-        print(options)
         weighted_options = {}
         for option in options:
             try:
@@ -184,7 +182,6 @@ class PizzaWriter:
 
     def write(self, write_result: str) -> str:
         command_blocks = command_to_blocks(write_result)  # höhö minecraft
-        print(command_blocks)
         if len(command_blocks) == 1:
             return self.process_general_block(command_blocks[0])
         else:
