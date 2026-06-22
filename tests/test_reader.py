@@ -1,22 +1,46 @@
+import pytest
 from pizza_eval import pizza_eval_read
 
-def test_basic_comparisons():
-    # is, in, start, end
-    assert pizza_eval_read("is 'hello'", "hello") is True
-    assert pizza_eval_read("is 'hello'", "world") is False
-    assert pizza_eval_read("in 'cat'", "the cat sat") is True
-    assert pizza_eval_read("start 'pre'", "prefix") is True
-    assert pizza_eval_read("end 'fix'", "prefix") is True
+# basic conditions
+@pytest.mark.parametrize("condition, msg, expected", [
+    ("is 'hello'", "hello", True),
+    ("is 'hello'", "world", False),
+    ("in 'cat'", "the cat sat", True),
+    ("start 'pre'", "prefix", True),
+    ("end 'fix'", "prefix", True),
+])
+def test_basic_comparisons(condition, msg, expected):
+    assert pizza_eval_read(condition, msg) is expected
 
-def test_logical_operators():
-    # & | ^
-    msg = "pepperoni pizza"
-    assert pizza_eval_read("in 'pepperoni' & in 'pizza'", msg) is True
-    assert pizza_eval_read("in 'pepperoni' & in 'pineapple'", msg) is False
-    assert pizza_eval_read("in 'pepperoni' | in 'pineapple'", msg) is True
-    assert pizza_eval_read("in 'pepperoni' ^ in 'pizza'", msg) is False  # xor
 
-def test_negation():
-    # not
-    assert pizza_eval_read("not is 'apple'", "banana") is True
-    assert pizza_eval_read("not in 'apple'", "pineapple") is False
+# isolated
+@pytest.mark.parametrize("condition, msg, expected", [
+    ("isolated allah", "allah uakbar", True),
+    ("isolated allah", "allahu akbar", False),
+    ("isolated allah", "allah ", True),
+    ("isolated allah", "ibrahim allah", True),
+    ("isolated allah", "wallah", False),
+    ("isolated allah", "allah", True)
+])
+def test_isolated(condition, msg, expected):
+    assert pizza_eval_read(condition, msg) == expected
+
+
+# & | ^
+@pytest.mark.parametrize("condition, msg, expected", [
+    ("in 'pepperoni' & in 'pizza'", "pepperoni pizza", True),
+    ("in 'pepperoni' & in 'pineapple'", "pepperoni pizza", False),
+    ("in 'pepperoni' | in 'pineapple'", "pepperoni pizza", True),
+    ("in 'pepperoni' ^ in 'pizza'", "pepperoni pizza", False),
+])
+def test_logical_operators(condition, msg, expected):
+    assert pizza_eval_read(condition, msg) is expected
+
+
+# not
+@pytest.mark.parametrize("condition, msg, expected", [
+    ("not is 'apple'", "banana", True),
+    ("not in 'apple'", "pineapple", False),
+])
+def test_negation(condition, msg, expected):
+    assert pizza_eval_read(condition, msg) is expected

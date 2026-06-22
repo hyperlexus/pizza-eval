@@ -1,20 +1,22 @@
+import re
 from .errors import PizzaError
 
+valid_checks = ['is ', 'in ', 'start ', 'end ', 'isolated ']
 
 def logical_xor(a, b):
     return (a or b) and not (a and b)
 
 
 # condition validator 3000
-def remove_text_inside_gaensefuesschen(expression):  # for contains_a_check
+def remove_text_inside_quotes(expression):  # for contains_a_check
     out = ""
-    inside_gaensefuesschen = False
+    inside_quotes = False
     for char in expression:
         if char == "'":
             out += char
-            inside_gaensefuesschen = not inside_gaensefuesschen
+            inside_quotes = not inside_quotes
             continue
-        if not inside_gaensefuesschen:
+        if not inside_quotes:
             out += char
     return out
 
@@ -25,61 +27,42 @@ def check_trailing_garbage(expression: str) -> None:  # works for single express
         if trailing_stuff:
             raise PizzaError(105, expression)
 
-def is_parenthese_lvl_fine(condition):
-    insideGaensefuesschen = False
-    parantheseLvl = 0
+def is_parentheses_level_fine(condition: str):
+    inside_quotes = False
+    parentheses_level = 0
     for char in condition:
         if char == "'":
-            insideGaensefuesschen = not insideGaensefuesschen
-        if insideGaensefuesschen:
+            inside_quotes = not inside_quotes
+        if inside_quotes:
             continue
         if char == "(":
-            parantheseLvl += 1
+            parentheses_level += 1
         elif char == ")":
-            parantheseLvl -= 1
-    return parantheseLvl
+            parentheses_level -= 1
+    return parentheses_level
 
-def two_gaensefuesschen_in_a_row(condition):
-    last_char_gaensefuesschen = False
-    for char in condition:
-        if char == "'":
-            if not last_char_gaensefuesschen:
-                last_char_gaensefuesschen = True
-            else:
-                return True
-        else:
-            last_char_gaensefuesschen = False
-    return False
-
+def two_quotes_in_a_row(condition: str):
+    return "''" in condition
 
 def bracket_open_close_in_a_row(condition):
-    insideGaensefuesschen = False
-    last_paranthese_open = False
-    for char in condition:
-        if char == "'":
-            insideGaensefuesschen = not insideGaensefuesschen
-        if insideGaensefuesschen:
-            continue
-        if char == "(":
-            last_paranthese_open = True
-        if char == ")" and last_paranthese_open:
-            return True
-        if not char == "(":
-            last_paranthese_open = False
-
+    clean_condition = re.sub(r"'.*?'", "", condition)
+    return "()" in clean_condition
 
 def is_valid_single_expression(single_expression: str) -> None:
+    valid_checks_stripped = [check.strip() for check in valid_checks]
     if single_expression == "":
         raise PizzaError(100, single_expression)
-    if all(check not in remove_text_inside_gaensefuesschen(single_expression) for check in ['is ', 'in ', 'start ', 'end ']):
+    if all(check not in remove_text_inside_quotes(single_expression) for check in valid_checks):
         raise PizzaError(101, single_expression)
     if single_expression.count("'") % 2:
         raise PizzaError(102, single_expression)
-    if any(check == single_expression for check in ['is', 'in', 'start', 'end', 'is ', 'in ', 'start ', 'end ']):
+    if any(check == single_expression for check in (valid_checks + valid_checks_stripped)):
         raise PizzaError(103, single_expression)
-    if any(check == single_expression for check in ['is ', 'in ', 'start ', 'end ']):
+    if any(check == single_expression for check in valid_checks):
         pass
 
+def isolated_check(cond: str, message: str) -> bool:
+    return message.startswith(f"{cond} ") or message.endswith(f" {cond}") or message.__contains__(f" {cond} ") or message.__eq__(f"{cond}")
 
 def is_valid_condition(condition: str) -> None:
     if not condition:
@@ -88,18 +71,18 @@ def is_valid_condition(condition: str) -> None:
         raise PizzaError(1, condition)
     if condition[0] == "'":
         raise PizzaError(2, condition)
-    if all(check not in condition for check in ['is ', 'in ', 'start ', 'end ']):
+    if all(check not in condition for check in valid_checks):
         raise PizzaError(3, condition)
-    parentheses_lvl_fine = is_parenthese_lvl_fine(condition)
+    parentheses_lvl_fine = is_parentheses_level_fine(condition)
     if parentheses_lvl_fine > 0:
         raise PizzaError(301, condition)
     if parentheses_lvl_fine < 0:
         raise PizzaError(302, condition)
     if bracket_open_close_in_a_row(condition):
         raise PizzaError(303, condition)
-    if two_gaensefuesschen_in_a_row(condition):
+    if two_quotes_in_a_row(condition):
         raise PizzaError(6, condition)
-    return True
+    return None
 
 
 # writer
@@ -110,32 +93,32 @@ def is_valid_replace_statement(replace_statement: str):
     if replace_statement.count("'") % 2:
         raise PizzaError(1204, replace_statement)
 
-    inquotes = False
-    openbracketcount, closebracketcount = 0, 0
+    in_quotes = False
+    open_bracket_count, close_bracket_count = 0, 0
     bracket_level = 0
-    backslashcount = 0
+    backslash_count = 0
     checked_valid_stringb_block = False  # (for performance)
     for i in replace_statement:
         if i == "'":
-            inquotes = not inquotes
-        elif not inquotes:
+            in_quotes = not in_quotes
+        elif not in_quotes:
             if i == "\\" and bracket_level == 1:
-                backslashcount += 1
+                backslash_count += 1
             if i == "[":
-                openbracketcount += 1
+                open_bracket_count += 1
                 bracket_level += 1
             elif i == "]":
-                closebracketcount += 1
+                close_bracket_count += 1
                 bracket_level -= 1
-            if backslashcount == 2 and not checked_valid_stringb_block:  # valid block but not random
-                stringb_to_check = replace_statement.split("\\")[2]
-                if stringb_to_check.startswith("[") and not stringb_to_check.startswith("[random"):
-                    raise PizzaError(1208, replace_statement)
-                checked_valid_stringb_block = True
+            # if backslash_count == 2 and not checked_valid_stringb_block:  # valid block but not random
+            #     stringb_to_check = replace_statement.split("\\")[2]
+            #     if stringb_to_check.startswith("[") and not stringb_to_check.startswith("[random"):
+            #         raise PizzaError(1208, replace_statement)
+            #     checked_valid_stringb_block = True
 
-    if openbracketcount != closebracketcount or bracket_level != 0:
+    if open_bracket_count != close_bracket_count or bracket_level != 0:
         raise PizzaError(1202, replace_statement)
-    if backslashcount != 2:
+    if backslash_count != 2:
         raise PizzaError(1205, replace_statement)
     return True
 

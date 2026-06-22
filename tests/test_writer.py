@@ -6,21 +6,29 @@ def test_static_blocks():
     assert result == "User Alice said Hello"
 
 def test_random_block():
-    # Testing [random] weighted choices
-    # We test that the result is one of the expected options
+    # [random]
     template = "[random\\optionA-1\\optionB-1]"
     result = pizza_eval_write("user", "msg", template)
     assert result in ["optionA", "optionB"]
 
+    # [random\[random\n-p\m-q]-r\o-s]
+    template_2 = "[random\\optionA-1\\[random\\optionB-1\\optionC-1]-1]"
+    a = [pizza_eval_write("user", "msg", template_2) for i in range(25)]
+    assert {"optionA", "optionB", "optionC"} <= set(a)
+
 def test_replace_logic():
-    # Testing [replace\\target\\replacement]
-    # Note: replace results in the original message with substitutions
-    msg = "I like apples"
-    template = "[replace\\apples\\bananas]"
-    assert pizza_eval_write("user", msg, template) == "I like bananas"
+    # testing replace
+    msg = "die banane"
+    template = "[replace\\die\\der]"
+    assert pizza_eval_write("user", msg, template) == "der banane"
 
 def test_nested_replace():
-    # Testing that replace blocks can handle random blocks inside them
-    msg = "Go up"
+    # nested replace[random]
+    msg = "go up"
     template = "[replace\\up\\[random\\down-1\\left-0]]"
-    assert pizza_eval_write("user", msg, template) == "Go down"
+    assert pizza_eval_write("user", msg, template) == "go down"
+
+def test_nested_random_replace():
+    msg = "go up"
+    template = "[random\\[replace\\up\\down]-1\\[replace\\up\\left]-1]"
+    assert pizza_eval_write("user", msg, template) in ["go down", "go left"]

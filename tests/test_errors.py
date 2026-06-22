@@ -1,7 +1,6 @@
 import pytest
 from pizza_eval import pizza_eval_read, PizzaError, pizza_eval_write
 
-
 @pytest.mark.parametrize("code, condition, message", [
     (0, "", "xd"),  # nothing passed
     (1, "is 'unclosed", "xd"),  # odd number of single quotes

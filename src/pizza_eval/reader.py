@@ -1,29 +1,29 @@
 from .errors import PizzaError
-from .utils import is_valid_condition, logical_xor, is_valid_single_expression
+from .utils import is_valid_condition, logical_xor, is_valid_single_expression, isolated_check
 
 
 def condition_to_blocks(condition):
     sub_blocks = []
-    parenthesesLvl = 0  # paranthese.
-    isInsideQuotes = False
-    lastBlockStartIdx = 0
-    for searchedOperator in ["|", "^", "&"]:
+    parentheses_level = 0  # paranthese.
+    is_inside_quotes = False
+    last_block_start_idx = 0
+    for searched_operator in ["|", "^", "&"]:
         for i in range(len(condition)):
             current_character = condition[i]
             if current_character == "'":
-                isInsideQuotes = not isInsideQuotes
-            elif not isInsideQuotes:
+                is_inside_quotes = not is_inside_quotes
+            elif not is_inside_quotes:
                 if current_character == "(":
-                    parenthesesLvl += 1
+                    parentheses_level += 1
                 elif current_character == ")":
-                    parenthesesLvl -= 1
-                elif current_character == searchedOperator and parenthesesLvl == 0:
-                    blankBefore = i > 0 and condition[i-1] == " "
-                    blankAfter = i < len(condition) - 1 and condition[i+1] == " "
-                    if i - lastBlockStartIdx > 0:
-                        sub_blocks.append(condition[lastBlockStartIdx:i - (1 if blankBefore else 0)])
+                    parentheses_level -= 1
+                elif current_character == searched_operator and parentheses_level == 0:
+                    space_before = i > 0 and condition[i-1] == " "
+                    space_after = i < len(condition) - 1 and condition[i+1] == " "
+                    if i - last_block_start_idx > 0:
+                        sub_blocks.append(condition[last_block_start_idx:i - (1 if space_before else 0)])
                     sub_blocks.append(current_character)
-                    sub_blocks.append(condition[i + (2 if blankAfter else 1):])
+                    sub_blocks.append(condition[i + (2 if space_after else 1):])
                     return sub_blocks
     if len(sub_blocks) == 0:
         if condition.startswith("(") and condition.endswith(")"):
@@ -32,7 +32,7 @@ def condition_to_blocks(condition):
     return sub_blocks
 
 
-def remove_quotes(string):
+def remove_quotes(string: str):
     string.strip()
     if string.count("'") >= 2:
         last_quote = string.rfind("'")
@@ -55,25 +55,28 @@ def recursively_check_entire_condition(condition: str) -> None:
 
 def eval_single_expression(expression: str, message: str):
     is_valid_single_expression(expression)
-    isNot = False
+    is_inverted = False
     if expression.startswith("not "):
-        isNot = True
+        is_inverted = True
         expression = expression[4:]
-    if expression.startswith("is"):
+    if expression.startswith("is "):
         cond = expression.partition("is ")[2]
-        operationResult = remove_quotes(cond) == message
-    elif expression.startswith("in"):
+        result = remove_quotes(cond) == message
+    elif expression.startswith("in "):
         cond = expression.partition("in ")[2]
-        operationResult = remove_quotes(cond) in message
+        result = remove_quotes(cond) in message
     elif expression.startswith("start "):
         cond = expression.partition("start ")[2]
-        operationResult = message.startswith(remove_quotes(cond))
+        result = message.startswith(remove_quotes(cond))
     elif expression.startswith("end "):
         cond = expression.partition("end ")[2]
-        operationResult = message.endswith(remove_quotes(cond))
+        result = message.endswith(remove_quotes(cond))
+    elif expression.startswith("isolated "):
+        cond = expression.partition("isolated ")[2]
+        result = isolated_check(cond, message)
     else:
         raise PizzaError(104, expression)
-    return operationResult if not isNot else not operationResult
+    return not result if is_inverted else result
 
 
 def pizza_eval_read(condition: str, message: str):

@@ -16,7 +16,7 @@ error_dict = {
     0: "nothing was passed.",
     1: "odd number of single quotes. make sure to close all quotes!",
     2: "condition had `'` as its first character, which is not allowed. did you quote the entire string instead of the expression value?",
-    3: "no valid simple type check contained in the expression. simple type checks are in, is, start, end",
+    3: "no valid simple type check contained in the expression. simple type checks are: in, is, start, end, isolated",
     4: "amount of opening and closing parentheses do not match. did you close all opened parentheses?",  # unreachable, is never raised
     5: "the condition has too many spaces. please set the expression into single quotes `'<expression>'` if it contains spaces.",
     6: "your condition contains two single quotes `''` in a row. please don't do that 🍕👌",
@@ -65,6 +65,6 @@ error_dict = {
     1204: "unmatched single quote in replace statement.",
     1205: "replace statement doesn't contain exactly 2 splitter backslashes outside of blocks.",
     1206: "invalid [replace\\stringa\\stringb] format. length of segments is not two.",
-    1207: "replace statements cannot be chained together inside of each other as that doesn't make sense",
-    1208: "statement to replace with starts with a [, but isn't a random block, which is not allowed. use single quotes (\') for this if you want to print a [ character."
+    1207: "replace statements cannot be chained together inside of each other as that doesn't make sense",  # this is now possible!
+    1208: "statement to replace with starts with a [, but isn't a random block, which is not allowed. use single quotes (\') for this if you want to print a [ character."  # this is now possible!
 }

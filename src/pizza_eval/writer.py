@@ -1,5 +1,4 @@
 import random
-import re
 from datetime import datetime
 
 from .utils import is_valid_replace_statement, command_contains_logic
@@ -52,23 +51,17 @@ def separate_random_blocks(random_block: str) -> list[tuple]:
     looking_for_event = True
     options = []
     current_event = ""
-    block_idx = 0
     parentheses_level = 0
-    for idx, char in enumerate(random_block):
+    for char in random_block:
         if char == "'":
             in_quotes = not in_quotes
         elif in_quotes:
             current_string += char
         elif not in_quotes:
             if char == "[":
-                if block_idx != 0:
-                    raise PizzaError(1105, random_block)
-                else:
-                    parentheses_level += 1
-                    current_string += "["
+                parentheses_level += 1
+                current_string += "["
             elif char == "]":
-                if block_idx == 1:
-                    raise PizzaError(1107, random_block)
                 if parentheses_level > 0:
                     parentheses_level -= 1
                     current_string += "]"
@@ -76,8 +69,8 @@ def separate_random_blocks(random_block: str) -> list[tuple]:
                     raise PizzaError(1108, random_block)
             elif char == "-":
                 if parentheses_level == 0:
-                    if looking_for_event is False:
-                        raise PizzaError(1109, random_block)
+                    if not looking_for_event:
+                        raise PizzaError(1110, random_block)
                     looking_for_event = False
                     current_event = current_string
                     current_string = ""
@@ -104,6 +97,40 @@ def separate_random_blocks(random_block: str) -> list[tuple]:
         raise PizzaError(1109, random_block)
     return options
 
+def separate_replace_blocks(replace_block: str) -> list:
+    """
+    returns a list of length 2 that contains the replace statement separated into its top level components.
+    :returns: list[to_be_replaced, to_replace_with]
+    """
+    in_quotes: bool = False
+    parentheses_level: int = 0
+    segments: list = []
+    current_statement: str = ""
+    for char in replace_block:
+        if char == "'":
+            in_quotes = not in_quotes
+        elif in_quotes:
+            current_statement += char
+        elif not in_quotes:
+            if char == "[":
+                parentheses_level += 1
+                current_statement += "["
+            elif char == "]":
+                if parentheses_level > 0:
+                    parentheses_level -= 1
+                    current_statement += "]"
+            elif char == "\\":
+                if parentheses_level == 0:
+                    segments.append(current_statement)
+                    current_statement = ""
+                else:
+                    current_statement += "\\"
+            else:
+                current_statement += char
+    if current_statement:
+        segments.append(current_statement)
+    return segments
+
 class PizzaWriter:
     def __init__(self, author_name: str, original_message: str):
         self.author_name = author_name
@@ -121,7 +148,7 @@ class PizzaWriter:
         elif block.startswith("[random\\"):
             return self.process_random_block(block)
         elif block.startswith("[replace\\"):
-            ...  # todo
+            return self.process_replace_blocks(block)
         else:
             return f"{block}"  # dont change irrelevant blocks
 
@@ -141,16 +168,27 @@ class PizzaWriter:
             except ValueError:
                 raise PizzaError(1102, random_block)
             if event.startswith("[") and event.endswith("]"):
-                event = self.process_general_block(random_block)
+                event = self.process_general_block(event)
 
             weighted_options[event] = weight
         return random.choices(list(weighted_options.keys()), list(weighted_options.values()), k=1)[0]
 
+    def process_replace_blocks(self, replace_block):
+        is_valid_replace_statement(replace_block)
+        replace_block = replace_block[1:-1]
+        replace_block = replace_block[8:]
+        to_replace, to_replace_with = separate_replace_blocks(replace_block)  # returns fixed length array
+        to_replace = self.process_general_block(to_replace)
+        to_replace_with = self.process_general_block(to_replace_with)
+        return self.original_message.replace(to_replace, to_replace_with)
+
     def write(self, write_result: str) -> str:
         command_blocks = command_to_blocks(write_result)  # höhö minecraft
+        print(command_blocks)
         if len(command_blocks) == 1:
             return self.process_general_block(command_blocks[0])
         else:
             output = ""
             for command_block in command_blocks:
                 output += self.process_general_block(command_block)
+            return output
