@@ -1,0 +1,5 @@
+.idea/
+src/pizza_eval.egg-info
+src/pizza_eval/__pycache__/
+tests/__pycache__
+tests/blud.py
