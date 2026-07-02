@@ -1,6 +1,5 @@
 from .errors import PizzaError
-from .utils import is_valid_condition, logical_xor, is_valid_single_expression, isolated_check
-
+from .utils import is_valid_condition, logical_xor, is_valid_single_expression, isolated_check, remove_quotes
 
 def condition_to_blocks(condition):
     sub_blocks = []
@@ -30,20 +29,6 @@ def condition_to_blocks(condition):
             return condition_to_blocks(condition[1:-1])
         sub_blocks.append(condition)
     return sub_blocks
-
-
-def remove_quotes(string: str):
-    string.strip()
-    if string.count("'") >= 2:
-        last_quote = string.rfind("'")
-        a = string[last_quote + 1:].strip()
-        if last_quote < len(string) - 1 and string[last_quote + 1:] and not string[last_quote + 1] == " ":
-            raise PizzaError(105, string)
-    if string.startswith("'") and string.endswith("'"):
-        return string[1:-1]
-    elif " " in string:
-        raise PizzaError(5, string)
-    return string
 
 def recursively_check_entire_condition(condition: str) -> None:
     blocks = condition_to_blocks(condition)

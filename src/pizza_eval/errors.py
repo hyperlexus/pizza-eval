@@ -49,7 +49,7 @@ error_dict = {
     1101: "invalid [random\\eventa-n\\eventb-m] format.",
     1102: "invalid eventn-p format.",
     1103: "probability has to be an integer indicating weight.",
-    1104: "random statements cannot be chained together as that doesn't make sense mathematically (refer to [this](https://i.imgur.com/LvT3YcW.png)).",  # this is now possible!
+    1104: "event has to contain at least one character",
     1105: "random event cannot contain a [ that isn't at the start (expression must be entire statement)",
     1106: "random event has mismatched [ and ].",
     1107: "random event cannot be an empty statement `[]`.",
@@ -65,6 +65,4 @@ error_dict = {
     1204: "unmatched single quote in replace statement.",
     1205: "replace statement doesn't contain exactly 2 splitter backslashes outside of blocks.",
     1206: "invalid [replace\\stringa\\stringb] format. length of segments is not two.",
-    1207: "replace statements cannot be chained together inside of each other as that doesn't make sense",  # this is now possible!
-    1208: "statement to replace with starts with a [, but isn't a random block, which is not allowed. use single quotes (\') for this if you want to print a [ character."  # this is now possible!
 }

@@ -156,19 +156,19 @@ class PizzaWriter:
         random_block = random_block[7:]
         options = separate_random_blocks(random_block)
         weighted_options = {}
-        for option in options:
-            try:
-                event, weight = option[0], option[1]
+        try:
+            for event, weight in options:
                 try:
                     weight = int(weight)
                 except ValueError:
                     raise PizzaError(1103, random_block)
-            except ValueError:
-                raise PizzaError(1102, random_block)
-            if event.startswith("[") and event.endswith("]"):
-                event = self.process_general_block(event)
-
-            weighted_options[event] = weight
+                if len(event) == 0:
+                    raise PizzaError(1104, random_block)
+                if event.startswith("[") and event.endswith("]"):
+                    event = self.process_general_block(event)
+                weighted_options[event] = weight
+        except ValueError:
+            raise PizzaError(1102, random_block)
         return random.choices(list(weighted_options.keys()), list(weighted_options.values()), k=1)[0]
 
     def process_replace_blocks(self, replace_block):

@@ -58,11 +58,10 @@ def is_valid_single_expression(single_expression: str) -> None:
         raise PizzaError(102, single_expression)
     if any(check == single_expression for check in (valid_checks + valid_checks_stripped)):
         raise PizzaError(103, single_expression)
-    if any(check == single_expression for check in valid_checks):
-        pass
+    return None
 
 def isolated_check(cond: str, message: str) -> bool:
-    return message.startswith(f"{cond} ") or message.endswith(f" {cond}") or message.__contains__(f" {cond} ") or message.__eq__(f"{cond}")
+    return message.startswith(f"{cond} ") or message.endswith(f" {cond}") or f" {cond} " in message or message == cond
 
 def is_valid_condition(condition: str) -> None:
     if not condition:
@@ -97,7 +96,6 @@ def is_valid_replace_statement(replace_statement: str):
     open_bracket_count, close_bracket_count = 0, 0
     bracket_level = 0
     backslash_count = 0
-    checked_valid_stringb_block = False  # (for performance)
     for i in replace_statement:
         if i == "'":
             in_quotes = not in_quotes
@@ -110,11 +108,6 @@ def is_valid_replace_statement(replace_statement: str):
             elif i == "]":
                 close_bracket_count += 1
                 bracket_level -= 1
-            # if backslash_count == 2 and not checked_valid_stringb_block:  # valid block but not random
-            #     stringb_to_check = replace_statement.split("\\")[2]
-            #     if stringb_to_check.startswith("[") and not stringb_to_check.startswith("[random"):
-            #         raise PizzaError(1208, replace_statement)
-            #     checked_valid_stringb_block = True
 
     if open_bracket_count != close_bracket_count or bracket_level != 0:
         raise PizzaError(1202, replace_statement)
@@ -130,3 +123,16 @@ def command_contains_logic(command: str) -> bool:
         if not in_quotes and char in ("[", "]"):
             return True
     return False
+
+def remove_quotes(string: str):
+    string = string.strip()
+    if string.count("'") >= 2:
+        last_quote = string.rfind("'")
+        a = string[last_quote + 1:].strip()
+        if last_quote < len(string) - 1 and string[last_quote + 1:] and not string[last_quote + 1] == " ":
+            raise PizzaError(105, string)
+    if string.startswith("'") and string.endswith("'"):
+        return string[1:-1]
+    elif " " in string:
+        raise PizzaError(5, string)
+    return string
